@@ -267,9 +267,7 @@
     <h1>サイゼリヤ 予算内メニュー選択アシスタント</h1>
     
     <div class="budget-container panel">
-        <h2>予算を設定</h2>
-        <input type="number" id="budgetInput" min="0" step="100" value="1000">円
-        <button id="setBudgetBtn" class="btn">予算を確定</button>
+        <h2>予算: 1000円</h2>
     </div>
     
     <div id="mainContent" class="hidden">
@@ -364,8 +362,6 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             // DOM要素
-            const budgetInput = document.getElementById('budgetInput');
-            const setBudgetBtn = document.getElementById('setBudgetBtn');
             const mainContent = document.getElementById('mainContent');
             const remainingBudgetEl = document.getElementById('remainingBudget');
             const totalPriceEl = document.getElementById('totalPrice');
@@ -378,48 +374,30 @@
             const comboContainer = document.getElementById('comboContainer');
             
             // 変数
-            let budget = 0;
-            let remainingBudget = 0;
+            const budget = 1000;
+            let remainingBudget = budget;
             let selectedItems = [];
             let activeCategory = 'all';
             
-            // カテゴリーフィルターを設定
+            // 初期表示
+            updateRemainingBudget();
             setupCategoryFilter();
+            renderMenuItems();
             
-            // 予算設定ボタンのイベントリスナー
-            setBudgetBtn.addEventListener('click', function() {
-                budget = parseInt(budgetInput.value) || 0;
-                if (budget <= 0) {
-                    alert('予算を入力してください');
-                    return;
-                }
-                
-                remainingBudget = budget;
-                updateRemainingBudget();
-                mainContent.classList.remove('hidden');
-                budgetInput.disabled = true;
-                setBudgetBtn.disabled = true;
-                
-                // メニュー一覧を初期化
-                renderMenuItems();
-            });
-            
-            // 検索ボックスのイベントリスナー
+            // イベントリスナー
             searchBox.addEventListener('input', function() {
                 renderMenuItems();
             });
             
-            // ランダムボタンのイベントリスナー
             randomBtn.addEventListener('click', function() {
                 addRandomItem();
             });
             
-            // 組み合わせ表示ボタンのイベントリスナー
             showCombosBtn.addEventListener('click', function() {
                 generateAndShowCombos();
             });
             
-            // カテゴリーフィルター設定
+            // カテゴリーフィルターを設定
             function setupCategoryFilter() {
                 // カテゴリー一覧を取得（重複なし）
                 const categories = ['all', ...new Set(menuItems.map(item => item.category))];
