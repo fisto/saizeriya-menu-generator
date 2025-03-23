@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>サイゼリヤ 予算内メニュー選択アシスタント</title>
+    <style>
+        body {
+            font-family: 'Hiragino Kaku Gothic ProN', 'メイリオ', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        h1 {
+            color: #c1272d;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .btn {
+            background-color: #c1272d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+            display: block;
+            margin: 20px auto;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #a11d23;
+        }
+        .btn:disabled {
+            background-color: #999;
+            cursor: not-allowed;
+        }
+        .budget-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .budget-container h2 {
+            color: #c1272d;
+            margin-bottom: 15px;
+        }
+        #budgetInput {
+            font-size: 18px;
+            padding: 8px;
+            width: 150px;
+            text-align: center;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+        }
+        .remaining {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            color: #333;
+        }
+        .remaining.warning {
+            color: #c1272d;
+        }
+        .panel {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .panel h3 {
+            color: #c1272d;
+            margin-top: 0;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        .menu-item-card {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .menu-item-card:hover {
+            background-color: #eaeaea;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .menu-item-card.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: #f0f0f0;
+        }
+        .menu-item-card.disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        .menu-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .menu-price {
+            color: #c1272d;
+            font-weight: bold;
+        }
+        .selected-items {
+            margin-top: 20px;
+        }
+        .selected-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #ddd;
+        }
+        .selected-item-name {
+            flex-grow: 1;
+        }
+        .selected-item-price {
+            font-weight: bold;
+            min-width: 80px;
+            text-align: right;
+        }
+        .remove-item {
+            color: #c1272d;
+            background: none;
+            border: none;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 16px;
+        }
+        .total {
+            font-size: 20px;
+            font-weight: bold;
+            text-align: right;
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 2px solid #ddd;
+        }
+        .category-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+            justify-content: center;
+        }
+        .category-btn {
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            padding: 5px 15px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .category-btn.active {
+            background-color: #c1272d;
+            color: white;
+            border-color: #c1272d;
+        }
+        .search-box {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        footer {
+            margin-top: 40px;
+            font-size: 12px;
+            text-align: center;
+            color: #666;
+        }
+        .hidden {
+            display: none;
+        }
+        .random-section {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px dashed #ddd;
+        }
+        .random-section p {
+            margin-bottom: 15px;
+            color: #666;
+        }
+        .combo-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px dashed #ddd;
+        }
+        .combo-section h3 {
+            color: #c1272d;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .combo-section p {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #666;
+        }
+        .combo-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .combo-card {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            transition: all 0.2s;
+        }
+        .combo-card:hover {
+            background-color: #f0f0f0;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .combo-items {
+            margin-bottom: 10px;
+        }
+        .combo-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1px dotted #eee;
+        }
+        .combo-total {
+            font-weight: bold;
+            text-align: right;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+        }
+        .combo-add-btn {
+            background-color: #c1272d;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+        .combo-add-btn:hover {
+            background-color: #a11d23;
+        }
+    </style>
+</head>
+<body>
+    <h1>サイゼリヤ 予算内メニュー選択アシスタント</h1>
+    
+    <div class="budget-container panel">
+        <h2>予算を設定</h2>
+        <input type="number" id="budgetInput" min="0" step="100" value="1000">円
+        <button id="setBudgetBtn" class="btn">予算を確定</button>
+    </div>
+    
+    <div id="mainContent" class="hidden">
+        <div class="remaining">残り予算: <span id="remainingBudget">0</span>円</div>
+        
+        <div class="panel">
+            <h3>選択したメニュー</h3>
+            <div id="selectedItems" class="selected-items">
+                <div class="selected-item">メニューをまだ選択していません</div>
+            </div>
+            <div class="total">合計: <span id="totalPrice">0</span>円</div>
+        </div>
+        
+        <div class="panel">
+            <h3>メニューを選ぶ</h3>
+            <input type="text" id="searchBox" class="search-box" placeholder="メニューを検索...">
+            <div class="category-filter" id="categoryFilter">
+                <!-- カテゴリーはJavaScriptで追加 -->
+            </div>
+            <div id="menuGrid" class="menu-grid">
+                <!-- メニューはJavaScriptで追加 -->
+            </div>
+        </div>
+        
+        <div class="combo-section panel">
+            <h3>おすすめの組み合わせ</h3>
+            <p>残りの予算で選べるメニューの組み合わせを提案します</p>
+            <button id="showCombosBtn" class="btn">組み合わせを表示</button>
+            <div id="comboContainer" class="combo-container hidden"></div>
+        </div>
+        
+        <div class="random-section">
+            <p>残りの予算で選べるメニューをランダムに提案します</p>
+            <button id="randomBtn" class="btn">ランダムに追加</button>
+        </div>
+    </div>
+
+    <footer>
+        ※価格は2024年現在の一般的なサイゼリヤのメニュー価格を元にしています。<br>
+        ※実際の価格と異なる場合があります。また、店舗によって取り扱いのないメニューがある場合があります。
+    </footer>
+
+    <script>
+        // サイゼリヤのメニューデータ（2024年頃の価格を想定）
+        const menuItems = [
+            { name: "ミラノ風ドリア", price: 399, category: "ドリア" },
+            { name: "エビのドリア", price: 499, category: "ドリア" },
+            { name: "小エビのカレードリア", price: 499, category: "ドリア" },
+            { name: "ペンネアラビアータ", price: 399, category: "パスタ" },
+            { name: "ミートソースボロニア風", price: 399, category: "パスタ" },
+            { name: "ナポリタン", price: 399, category: "パスタ" },
+            { name: "ほうれん草のスパゲッティ", price: 399, category: "パスタ" },
+            { name: "ボンゴレ（あさり）スパゲッティ", price: 499, category: "パスタ" },
+            { name: "スパゲッティ・ペペロンチーノ", price: 299, category: "パスタ" },
+            { name: "たっぷりミートソース", price: 499, category: "パスタ" },
+            { name: "エビと野菜のトマトクリームスパゲッティ", price: 599, category: "パスタ" },
+            { name: "ハンバーグステーキ", price: 399, category: "肉料理" },
+            { name: "若鶏のディアボラ風", price: 499, category: "肉料理" },
+            { name: "柔らかチキンのチーズ焼き", price: 599, category: "肉料理" },
+            { name: "イタリアンハンバーグ", price: 599, category: "肉料理" },
+            { name: "マルゲリータピザ", price: 499, category: "ピザ" },
+            { name: "プチフォッカ", price: 199, category: "前菜" },
+            { name: "ガーリックトースト", price: 199, category: "前菜" },
+            { name: "ブロッコリーのくたくた", price: 299, category: "野菜" },
+            { name: "ポテトのグリル", price: 299, category: "野菜" },
+            { name: "野菜ソースのグリル野菜", price: 399, category: "野菜" },
+            { name: "アスパラガスのグリル", price: 399, category: "野菜" },
+            { name: "辛味チキン", price: 299, category: "前菜" },
+            { name: "エスカルゴのオーブン焼き", price: 399, category: "前菜" },
+            { name: "ムール貝のガーリック焼き", price: 399, category: "前菜" },
+            { name: "小エビのカリッと香りフライ", price: 399, category: "前菜" },
+            { name: "イカの切り身カリッと香りフライ", price: 399, category: "前菜" },
+            { name: "エビとブロッコリーのサラダ", price: 399, category: "サラダ" },
+            { name: "チョリソー", price: 299, category: "前菜" },
+            { name: "ライス", price: 150, category: "サイド" },
+            { name: "スープ", price: 150, category: "サイド" },
+            { name: "ミニフィセル", price: 100, category: "サイド" },
+            { name: "セットドリンクバー", price: 190, category: "ドリンク" },
+            { name: "ドリンクバー", price: 299, category: "ドリンク" },
+            { name: "ティラミス", price: 299, category: "デザート" },
+            { name: "カプチーノ", price: 299, category: "デザート" },
+            { name: "アイスクリーム", price: 199, category: "デザート" },
+            { name: "シナモンプリン", price: 299, category: "デザート" },
+            { name: "ミラノ風ミックスサラダ", price: 399, category: "サラダ" },
+            { name: "チーズinミラノサラダ", price: 499, category: "サラダ" },
+            { name: "トマトとモッツァレラチーズのサラダ", price: 499, category: "サラダ" },
+            { name: "バッファローモッツァレラ", price: 399, category: "サラダ" },
+            { name: "小海老サラダ", price: 399, category: "サラダ" },
+            { name: "ワカモレサラダ", price: 399, category: "サラダ" },
+            { name: "チキンのシーザーサラダ", price: 499, category: "サラダ" }
+        ];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM要素
+            const budgetInput = document.getElementById('budgetInput');
+            const setBudgetBtn = document.getElementById('setBudgetBtn');
+            const mainContent = document.getElementById('mainContent');
+            const remainingBudgetEl = document.getElementById('remainingBudget');
+            const totalPriceEl = document.getElementById('totalPrice');
+            const selectedItemsEl = document.getElementById('selectedItems');
+            const menuGridEl = document.getElementById('menuGrid');
+            const randomBtn = document.getElementById('randomBtn');
+            const searchBox = document.getElementById('searchBox');
+            const categoryFilterEl = document.getElementById('categoryFilter');
+            const showCombosBtn = document.getElementById('showCombosBtn');
+            const comboContainer = document.getElementById('comboContainer');
+            
+            // 変数
+            let budget = 0;
+            let remainingBudget = 0;
+            let selectedItems = [];
+            let activeCategory = 'all';
+            
+            // カテゴリーフィルターを設定
+            setupCategoryFilter();
+            
+            // 予算設定ボタンのイベントリスナー
+            setBudgetBtn.addEventListener('click', function() {
+                budget = parseInt(budgetInput.value) || 0;
+                if (budget <= 0) {
+                    alert('予算を入力してください');
+                    return;
+                }
+                
+                remainingBudget = budget;
+                updateRemainingBudget();
+                mainContent.classList.remove('hidden');
+                budgetInput.disabled = true;
+                setBudgetBtn.disabled = true;
+                
+                // メニュー一覧を初期化
+                renderMenuItems();
+            });
+            
+            // 検索ボックスのイベントリスナー
+            searchBox.addEventListener('input', function() {
+                renderMenuItems();
+            });
+            
+            // ランダムボタンのイベントリスナー
+            randomBtn.addEventListener('click', function() {
+                addRandomItem();
+            });
+            
+            // 組み合わせ表示ボタンのイベントリスナー
+            showCombosBtn.addEventListener('click', function() {
+                generateAndShowCombos();
+            });
+            
+            // カテゴリーフィルター設定
+            function setupCategoryFilter() {
+                // カテゴリー一覧を取得（重複なし）
+                const categories = ['all', ...new Set(menuItems.map(item => item.category))];
+                
+                // カテゴリーボタンを作成
+                categories.forEach(category => {
+                    const button = document.createElement('div');
+                    button.className = 'category-btn' + (category === 'all' ? ' active' : '');
+                    button.textContent = category === 'all' ? 'すべて' : category;
+                    button.dataset.category = category;
+                    
+                    button.addEventListener('click', function() {
+                        // 現在のアクティブカテゴリーを解除
+                        document.querySelectorAll('.category-btn').forEach(btn => {
+                            btn.classList.remove('active');
+                        });
+                        
+                        // クリックされたカテゴリーをアクティブに
+                        this.classList.add('active');
+                        activeCategory = this.dataset.category;
+                        
+                        // メニュー一覧を再描画
+                        renderMenuItems();
+                    });
+                    
+                    categoryFilterEl.appendChild(button);
+                });
+            }
+            
+            // メニュー一覧を表示
+            function renderMenuItems() {
+                // メニューグリッドをクリア
+                menuGridEl.innerHTML = '';
+                
+                // 検索フィルター用のテキスト
+                const searchText = searchBox.value.toLowerCase();
+                
+                // メニューをフィルタリング
+                let filteredMenus = menuItems;
+                
+                // カテゴリーでフィルタリング
+                if (activeCategory !== 'all') {
+                    filteredMenus = filteredMenus.filter(item => item.category === activeCategory);
+                }
+                
+                // 検索テキストでフィルタリング
+                if (searchText) {
+                    filteredMenus = filteredMenus.filter(item => 
+                        item.name.toLowerCase().includes(searchText) || 
+                        item.category.toLowerCase().includes(searchText)
+                    );
+                }
+                
+                // メニューカードを作成
+                filteredMenus.forEach(item => {
+                    // 予算内かチェック
+                    const disabled = item.price > remainingBudget;
+                    
+                    // 既に選択済みかチェック
+                    const isSelected = selectedItems.some(selected => selected.name === item.name);
+                    
+                    // 表示しないなら飛ばす
+                    if (isSelected) return;
+                    
+                    const card = document.createElement('div');
+                    card.className = 'menu-item-card' + (disabled ? ' disabled' : '');
+                    card.innerHTML = `
+                        <div class="menu-name">${item.name}</div>
+                        <div class="menu-price">${item.price}円</div>
+                    `;
+                    
+                    if (!disabled) {
+                        card.addEventListener('click', function() {
+                            addMenuItem(item);
+                        });
+                    }
+                    
+                    menuGridEl.appendChild(card);
+                });
+            }
+            
+            // メニューを選択リストに追加
+            function addMenuItem(item) {
+                // 予算チェック
+                if (item.price > remainingBudget) {
+                    alert('予算オーバーです');
+                    return;
+                }
+                
+                // 選択リストに追加
+                selectedItems.push(item);
+                
+                // 予算を更新
+                remainingBudget -= item.price;
+                updateRemainingBudget();
+                
+                // 選択リストを更新
+                updateSelectedItemsList();
+                
+                // メニュー一覧を再描画
+                renderMenuItems();
+            }
+            
+            // 選択リストからメニューを削除
+            function removeMenuItem(index) {
+                // 選択リストから削除して予算を戻す
+                const removedItem = selectedItems.splice(index, 1)[0];
+                remainingBudget += removedItem.price;
+                
+                // 更新
+                updateRemainingBudget();
+                updateSelectedItemsList();
+                renderMenuItems();
+            }
+            
+            // 選択リストを更新
+            function updateSelectedItemsList() {
+                // 選択リストをクリア
+                selectedItemsEl.innerHTML = '';
+                
+                if (selectedItems.length === 0) {
+                    const emptyEl = document.createElement('div');
+                    emptyEl.className = 'selected-item';
+                    emptyEl.textContent = 'メニューをまだ選択していません';
+                    selectedItemsEl.appendChild(emptyEl);
+                    totalPriceEl.textContent = '0';
+                    return;
+                }
+                
+                // 合計金額
+                let totalPrice = 0;
+                
+                // 選択したメニューを表示
+                selectedItems.forEach((item, index) => {
+                    const itemEl = document.createElement('div');
+                    itemEl.className = 'selected-item';
+                    
+                    const nameEl = document.createElement('div');
+                    nameEl.className = 'selected-item-name';
+                    nameEl.textContent = item.name;
+                    
+                    const priceEl = document.createElement('div');
+                    priceEl.className = 'selected-item-price';
+                    priceEl.textContent = `${item.price}円`;
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'remove-item';
+                    removeBtn.textContent = '×';
+                    removeBtn.addEventListener('click', function() {
+                        removeMenuItem(index);
+                    });
+                    
+                    itemEl.appendChild(nameEl);
+                    itemEl.appendChild(priceEl);
+                    itemEl.appendChild(removeBtn);
+                    
+                    selectedItemsEl.appendChild(itemEl);
+                    totalPrice += item.price;
+                });
+                
+                // 合計金額を更新
+                totalPriceEl.textContent = totalPrice;
+            }
+            
+            // 残り予算表示を更新
+            function updateRemainingBudget() {
+                remainingBudgetEl.textContent = remainingBudget;
+                
+                // 予算が少なくなったら警告表示
+                const remainingEl = document.querySelector('.remaining');
+                if (remainingBudget < 200) {
+                    remainingEl.classList.add('warning');
+                } else {
+                    remainingEl.classList.remove('warning');
+                }
+                
+                // ランダムボタンと組み合わせボタンの有効/無効を切り替え
+                randomBtn.disabled = remainingBudget < 100;
+                showCombosBtn.disabled = remainingBudget < 100;
+            }
+            
+            // ランダムに選択可能なメニューを追加
+            function addRandomItem() {
+                // 選択可能なメニュー（予算内かつまだ選択していないもの）
+                const availableItems = menuItems.filter(item => 
+                    item.price <= remainingBudget &&
+                    !selectedItems.some(selected => selected.name === item.name)
+                );
+                
+                if (availableItems.length === 0) {
+                    alert('選択可能なメニューがありません');
+                    return;
+                }
+                
+                // ランダムに1つ選択
+                const randomIndex = Math.floor(Math.random() * availableItems.length);
+                const randomItem = availableItems[randomIndex];
+                
+                // 追加
+                addMenuItem(randomItem);
+            }
+            
+            // 組み合わせを生成して表示
+            function generateAndShowCombos() {
+                // 選択可能なメニュー（予算内かつまだ選択していないもの）
+                const availableItems = menuItems.filter(item => 
+                    item.price <= remainingBudget &&
+                    !selectedItems.some(selected => selected.name === item.name)
+                );
+                
+                if (availableItems.length === 0) {
+                    alert('選択可能なメニューがありません');
+                    return;
+                }
+                
+                // 組み合わせを生成
+                const combos = generateCombinations(availableItems, remainingBudget);
+                
+                // 組み合わせの表示
+                displayCombos(combos);
+                
+                // 組み合わせコンテナを表示
+                comboContainer.classList.remove('hidden');
+                
+                // ボタンのテキスト変更
+                showCombosBtn.textContent = '組み合わせを更新';
+            }
+            
+            // 組み合わせを生成（バックトラッキングアルゴリズム）
+            function generateCombinations(items, targetBudget) {
+                const MAX_COMBOS = 8; // 最大表示数
+                const MIN_ITEMS = 2;  // 最小アイテム数
+                const MAX_ITEMS = 4;  // 最大アイテム数
+                let combinations = [];
+                
+                // 少ないアイテム数から試す
+                for (let size = MIN_ITEMS; size <= MAX_ITEMS; size++) {
+                    // 予算の80%〜100%を目指す
+                    const minTotal = targetBudget * 0.8;
+                    const maxTotal = targetBudget;
+                    
+                    // ランダムなアイテム組み合わせを試行
+                    const attempts = 100; // 試行回数
+                    
+                    for (let i = 0; i < attempts && combinations.length < MAX_COMBOS; i++) {
+                        let combo = [];
+                        let total = 0;
+                        let availItems = [...items]; // コピーを作成
+                        
+                        // アイテムをランダムに選ぶ
+                        for (let j = 0; j < size && availItems.length > 0; j++) {
+                            const index = Math.floor(Math.random() * availItems.length);
+                            const item = availItems[index];
+                            
+                            // 予算オーバーならスキップ
+                            if (total + item.price > maxTotal) {
+                                availItems.splice(index, 1);
+                                j--; // やり直し
+                                continue;
+                            }
+                            
+                            combo.push(item);
+                            total += item.price;
+                            availItems.splice(index, 1);
+                        }
+                        
+                        // 条件を満たしたらリストに追加
+                        if (combo.length >= MIN_ITEMS && total >= minTotal && total <= maxTotal) {
+                            // 重複チェック（同じ組み合わせでなければ追加）
+                            const isDuplicate = combinations.some(existingCombo => {
+                                if (existingCombo.items.length !== combo.length) return false;
+                                
+                                // 同じアイテムか確認
+                                const existingNames = existingCombo.items.map(item => item.name).sort();
+                                const comboNames = combo.map(item => item.name).sort();
+                                
+                                return JSON.stringify(existingNames) === JSON.stringify(comboNames);
+                            });
+                            
+                            if (!isDuplicate) {
+                                combinations.push({
+                                    items: combo,
+                                    total: total
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                // 合計金額が高い順にソート
+                combinations.sort((a, b) => b.total - a.total);
+                
+                // 最大表示数に制限
+                return combinations.slice(0, MAX_COMBOS);
+            }
+            
+            // 組み合わせの表示
+            function displayCombos(combos) {
+                comboContainer.innerHTML = '';
+                
+                if (combos.length === 0) {
+                    const noCombo = document.createElement('p');
+                    noCombo.textContent = '条件に合う組み合わせがありませんでした。';
+                    noCombo.style.textAlign = 'center';
+                    noCombo.style.color = '#666';
+                    comboContainer.appendChild(noCombo);
+                    return;
+                }
+                
+                combos.forEach((combo, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'combo-card';
+                    
+                    const items = document.createElement('div');
+                    items.className = 'combo-items';
+                    
+                    combo.items.forEach(item => {
+                        const itemEl = document.createElement('div');
+                        itemEl.className = 'combo-item';
+                        
+                        const nameEl = document.createElement('div');
+                        nameEl.textContent = item.name;
+                        
+                        const priceEl = document.createElement('div');
+                        priceEl.textContent = `${item.price}円`;
+                        
+                        itemEl.appendChild(nameEl);
+                        itemEl.appendChild(priceEl);
+                        items.appendChild(itemEl);
+                    });
+                    
+                    const totalEl = document.createElement('div');
+                    totalEl.className = 'combo-total';
+                    totalEl.textContent = `合計: ${combo.total}円`;
+                    
+                    const addBtn = document.createElement('button');
+                    addBtn.className = 'combo-add-btn';
+                    addBtn.textContent = 'この組み合わせを追加';
+                    addBtn.addEventListener('click', function() {
+                        addComboItems(combo.items);
+                    });
+                    
+                    card.appendChild(items);
+                    card.appendChild(totalEl);
+                    card.appendChild(addBtn);
+                    
+                    comboContainer.appendChild(card);
+                });
+            }
+            
+            // 組み合わせをまとめて追加
+            function addComboItems(items) {
+                // 予算チェック
+                const total = items.reduce((sum, item) => sum + item.price, 0);
+                if (total > remainingBudget) {
+                    alert('予算オーバーです');
+                    return;
+                }
+                
+                // メニューをまとめて追加
+                items.forEach(item => {
+                    // 選択リストに追加
+                    selectedItems.push(item);
+                    
+                    // 予算を更新
+                    remainingBudget -= item.price;
+                });
+                
+                updateRemainingBudget();
+                updateSelectedItemsList();
+                renderMenuItems();
+                
+                // 組み合わせを非表示
+                comboContainer.classList.add('hidden');
+                showCombosBtn.textContent = '組み合わせを表示';
+            }
+        });
+    </script>
+</body>
+</html>
